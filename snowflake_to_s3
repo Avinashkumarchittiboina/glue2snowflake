@@ -1,0 +1,45 @@
+'''
+Connects to Snowflake and pull data into S3 csv
+'''
+
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+'''
+## @params: [JOB_NAME]
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+job.commit()
+'''
+from pyspark.sql import SparkSession
+from pyspark import SparkContext
+
+def main():
+    
+    SNOWFLAKE_SOURCE_NAME = 'net.snowflake.spark.snowflake'
+    snowflake_database = 'MANAGE_DB'
+    snowflake_schema = 'IPHONE_DATA_ANALYSIS'
+    snowflake_table_name ='Iphone_data_recoveed'
+    snowflake_options={
+        "sfUrl":'https://dyxbhjg-gc20234.snowflakecomputing.com',
+        "sfUser":'avinashkumar',
+        "sfPassword":'',
+        "sfDatabase":snowflake_database,
+        "sfSchema":snowflake_schema,
+        "sfWarehouse":"COMPUTE_WH"
+    }
+    df=spark.read\
+        .format(SNOWFLAKE_SOURCE_NAME)\
+        .options(**snowflake_options)\
+        .option("query","SELECT sum(sale_price),RAM FROM IPHONE_DATA group by RAM")\
+        .load()
+    df.coalesce(1).write.option("mode","overwrite").option("header","true").csv("s3://avinashiphonedatajars/demo.csv")
+    
